@@ -113,8 +113,16 @@ function App() {
   // Load recipes
   useEffect(() => {
     fetch(`${API_BASE}/recipes`)
-      .then(res => res.json())
-      .then(data => setRecipes(data));
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => setRecipes(data))
+      .catch(err => {
+        // Set a UI indicator for loading error instead of crashing
+        setRecipes(null);
+        window.fetchRecipesError = err; // Dev inspection
+      });
   }, []);
 
   // PUBLIC_INTERFACE
@@ -187,12 +195,15 @@ function App() {
           <RecipeForm current={editRecipe} onSave={handleSave} onCancel={() => setShowForm(false)} />
         ) : (
           <div className="recipe-card-list">
-            {recipes.length === 0
-              ? <p>No recipes yet!</p>
-              : recipes.map(recipe =>
+            {recipes === null ? (
+              <p style={{color:"#e85656"}}>Failed to load recipes.<br/>Check your network or backend server.</p>
+            ) : recipes.length === 0 ? (
+              <p>No recipes yet!</p>
+            ) : (
+              recipes.map(recipe =>
                 <RecipeCard key={recipe.id} recipe={recipe} onEdit={handleEdit} onDelete={handleDelete}/>
               )
-            }
+            )}
           </div>
         )}
       </main>
